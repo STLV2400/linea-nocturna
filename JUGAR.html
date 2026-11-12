@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LÍNEA NOCTURNA — Hotel Miraflores (3D)</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:100%;height:100%;overflow:hidden;background:#000;color:#cfc;font-family:"Courier New",monospace;user-select:none}
+  #game{position:relative;width:100%;height:100%;overflow:hidden}
+
+  /* ---------- ESCENA ---------- */
+  #scene{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 85%,#2a1d12 0%,#120c08 45%,#050302 100%);transition:filter .08s}
+  #scene.dark{filter:brightness(.15)}
+  #backdoor{position:absolute;left:50%;top:8%;width:220px;height:46%;transform:translateX(-50%);
+    background:linear-gradient(#0b0f12,#05070a);border:10px solid #2b1e14;box-shadow:inset 0 0 60px #000,0 0 40px #000}
+  #backdoor:after{content:"";position:absolute;left:50%;top:0;bottom:0;width:8px;background:#2b1e14;transform:translateX(-50%)}
+  #backdoor{cursor:pointer}
+  #lobby{position:absolute;inset:0;width:100%;height:100%}
+  #blind{position:absolute;left:0;right:0;top:0;height:0;z-index:2;transition:height .3s;
+    background:repeating-linear-gradient(#5a4a36 0 10px,#3a2e20 10px 13px);box-shadow:0 4px 10px #000}
+  #blind.closed{height:100%}
+  #doorlabel{position:absolute;bottom:-22px;left:0;right:0;text-align:center;font-size:11px;color:#8a6a4a;z-index:3}
+  #intro .row{display:flex;gap:22px;flex-wrap:wrap;justify-content:center;margin:10px 0 20px}
+  #intro .card{width:230px;background:#0b0606;border:1px solid #4a1a1a;padding:10px;text-align:left}
+  #intro .card canvas{width:100%;height:auto;background:#050202;display:block;margin-bottom:8px}
+  #intro .card b{color:#e44;letter-spacing:2px}
+  #intro .card p{font-size:12px;margin:6px 0 0;color:#aaa;line-height:1.4}
+  #intro .card .tell{color:#eec36a}
+  #registry .files{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin-top:12px}
+  #registry .file{background:#c9b88e;border:1px solid #8a7450;padding:8px;font-size:12px;display:flex;gap:8px}
+  #registry .file canvas{width:60px;height:84px;background:#1a1410;flex-shrink:0}
+  #registry .file b{color:#6a0a0a}
+  #elevator{position:absolute;right:10%;top:14%;width:120px;height:40%;background:#1a1612;border:6px solid #3a2c1e}
+  #elevator .lamp{position:absolute;top:-30px;left:50%;transform:translateX(-50%);width:60px;height:18px;background:#120d08;border:2px solid #3a2c1e;color:#a40;font-size:12px;text-align:center;line-height:14px}
+  #elevator .lamp.on{color:#f62;text-shadow:0 0 8px #f40}
+  #sign{position:absolute;left:8%;top:12%;color:#6a4a2a;font-size:14px;letter-spacing:4px;border:2px solid #3a2a18;padding:8px 14px;background:#0d0906}
+
+  #desk{position:absolute;left:0;right:0;bottom:0;height:34%;background:linear-gradient(#3b2414,#1c1009);border-top:6px solid #4e3019;box-shadow:0 -20px 60px #000}
+  #lampglow{position:absolute;left:50%;bottom:22%;width:900px;height:500px;transform:translateX(-50%);background:radial-gradient(ellipse at 50% 100%,rgba(255,190,110,.18),transparent 60%);pointer-events:none}
+
+  .obj{position:absolute;cursor:pointer;transition:transform .15s,filter .15s}
+  .obj:hover{transform:translateY(-4px);filter:brightness(1.3)}
+  #phone{left:9%;bottom:12%;width:170px;height:110px;background:linear-gradient(#2a0d0d,#160505);border-radius:24px 24px 10px 10px;border:3px solid #3d1414;box-shadow:0 10px 30px #000}
+  #phone .handset{position:absolute;top:-22px;left:-8px;right:-8px;height:34px;background:#1d0707;border-radius:20px;border:3px solid #3d1414}
+  #phone .dial{position:absolute;left:50%;top:40px;width:56px;height:56px;transform:translateX(-50%);border-radius:50%;border:4px dotted #6a3030;background:#120404}
+  #phone .led{position:absolute;right:16px;top:16px;width:10px;height:10px;border-radius:50%;background:#300}
+  #phone.ringing{animation:shake .12s infinite}
+  #phone.ringing .led{background:#f22;box-shadow:0 0 14px #f22}
+  #phone.incall .handset{top:-60px;transform:rotate(-12deg)}
+  #phone .label{position:absolute;bottom:-26px;width:100%;text-align:center;font-size:11px;color:#8a6a4a}
+  @keyframes shake{0%{transform:translate(0,0) rotate(0)}25%{transform:translate(2px,-1px) rotate(1deg)}50%{transform:translate(-2px,1px) rotate(-1deg)}75%{transform:translate(1px,1px)}}
+
+  #monitor{left:50%;bottom:10%;transform:translateX(-50%);width:300px;height:210px;background:#1b1b1b;border-radius:14px;border:8px solid #2c2c2c;box-shadow:0 10px 40px #000;padding:8px}
+  #monitor:hover{transform:translateX(-50%) translateY(-4px)}
+  #monitor canvas{width:100%;height:100%;border-radius:8px;background:#010401;display:block}
+  #monitor .label{position:absolute;bottom:-26px;width:100%;left:0;text-align:center;font-size:11px;color:#8a6a4a}
+
+  #book{right:10%;bottom:14%;width:170px;height:110px;background:linear-gradient(135deg,#3a1a10,#200c06);border-radius:4px 10px 10px 4px;border-left:12px solid #1a0804;box-shadow:0 10px 30px #000;color:#c9a46a;text-align:center;padding-top:34px;font-size:13px;letter-spacing:2px}
+  #book .label{position:absolute;bottom:-26px;width:100%;left:0;text-align:center;font-size:11px;color:#8a6a4a;letter-spacing:0}
+
+  /* ---------- HUD ---------- */
+  #hud{position:absolute;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;pointer-events:none;z-index:5}
+  #clock{font-size:34px;color:#e8e0c8;text-shadow:0 0 10px #000}
+  #night{font-size:14px;color:#a98}
+  .meters{text-align:right;font-size:15px;line-height:1.8}
+  .meters span{letter-spacing:4px}
+
+  /* ---------- LLAMADA ---------- */
+  #callpanel{position:absolute;right:2%;top:11%;width:min(470px,92vw);background:rgba(4,8,4,.92);border:1px solid #2f4a2f;
+    box-shadow:0 0 40px #000;padding:16px 18px;display:none;z-index:6}
+  #callpanel.show{display:block}
+  #callerid{display:flex;justify-content:space-between;font-size:13px;color:#7c7;border-bottom:1px dashed #2f4a2f;padding-bottom:8px;margin-bottom:10px}
+  #subs{min-height:74px;font-size:18px;line-height:1.5;color:#e6f5e6}
+  #subs.ghosty{color:#cfe;text-shadow:1px 0 #f33,-1px 0 #3ff}
+  #timerbar{height:4px;background:#132013;margin:12px 0}
+  #timerbar div{height:100%;background:#7c7;width:100%}
+  .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  button{font-family:inherit;font-size:14px;background:#0d150d;color:#bdb;border:1px solid #3a5a3a;padding:9px 12px;cursor:pointer}
+  button:hover{background:#1a2a1a;color:#fff}
+  button:disabled{opacity:.35;cursor:default}
+  button.ok{border-color:#4a8a4a;color:#9f9}
+  button.no{border-color:#8a3a3a;color:#f99}
+  #notes{font-size:12px;color:#8a8;margin-top:10px;min-height:16px}
+
+  /* ---------- MODALES ---------- */
+  .modal{position:absolute;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:8}
+  .modal.show{display:flex}
+  #registry .paper{width:min(760px,94vw);max-height:88vh;overflow:auto;background:#d8c9a3;color:#2a1a0a;padding:22px 28px;font-family:Georgia,serif;box-shadow:0 0 60px #000;position:relative}
+  #registry h2{font-size:22px;margin-bottom:4px}
+  #registry .sub{font-size:13px;margin-bottom:12px;font-style:italic}
+  #registry table{width:100%;border-collapse:collapse;font-size:14px;margin-bottom:10px}
+  #registry td{border-bottom:1px solid #a9946a;padding:4px 6px}
+  #registry td.r{font-weight:bold;width:60px}
+  #registry .vac{color:#8a7a5a;font-style:italic}
+  #registry .cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+  #registry .memorial{margin-top:10px;border-top:2px solid #6a4a2a;padding-top:10px;font-size:13px;color:#4a1a0a}
+  #registry .close{position:absolute;top:10px;right:12px;background:#2a1a0a;color:#d8c9a3;border:none}
+  #camview canvas{width:min(720px,94vw);height:auto;border:10px solid #222;border-radius:10px;background:#000}
+  #camview .wrap{text-align:center}
+  #camview .wrap button{margin-top:10px}
+
+  /* ---------- PANTALLAS ---------- */
+  .screen{position:absolute;inset:0;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;z-index:20;padding:20px}
+  .screen.show{display:flex}
+  .screen h1{font-size:clamp(34px,7vw,72px);color:#c22;letter-spacing:8px;text-shadow:0 0 20px #600;animation:flick 4s infinite}
+  .screen h3{color:#a98;font-weight:normal;margin:10px 0 24px}
+  .screen p{max-width:640px;color:#9a9;line-height:1.6;font-size:15px;margin-bottom:10px}
+  .screen button{margin:8px;font-size:17px;padding:12px 24px}
+  @keyframes flick{0%,100%{opacity:1}92%{opacity:1}93%{opacity:.2}94%{opacity:1}96%{opacity:.4}97%{opacity:1}}
+
+  #flash{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:9;transition:opacity .2s}
+  #toast{position:absolute;left:50%;bottom:38%;transform:translateX(-50%);color:#e9d;font-size:16px;text-shadow:0 0 10px #000;opacity:0;transition:opacity .6s;z-index:7;text-align:center;max-width:80vw}
+  #jump{position:absolute;inset:0;z-index:30;display:none;background:#000}
+  #jump canvas{width:100%;height:100%}
+  #vignette{position:absolute;inset:0;pointer-events:none;z-index:4;background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.85) 100%)}
+  #grain{position:absolute;inset:0;pointer-events:none;z-index:4;opacity:.06;mix-blend-mode:screen}
+
+  /* ===== versión 3D ===== */
+  #scene{display:none}
+  #world{position:absolute;inset:0;width:100%;height:100%;border:0;z-index:0;background:#000}
+  #callpanel{left:2%;right:auto;top:12%;width:min(440px,92vw)}
+  #hud{z-index:5}
+  #ringbar{position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:6;display:none;background:rgba(60,0,0,.85);border:1px solid #f44;color:#fdd;
+    padding:8px 18px;font-size:16px;letter-spacing:2px;animation:pulse .6s infinite alternate;pointer-events:none}
+  @keyframes pulse{from{box-shadow:0 0 6px #f22}to{box-shadow:0 0 26px #f22;background:rgba(110,0,0,.9)}}
+  #knockbar{position:absolute;left:50%;top:58px;transform:translateX(-50%);z-index:6;display:none;background:rgba(20,20,40,.85);border:1px solid #88f;color:#dde;padding:7px 16px;font-size:15px;pointer-events:none}
+  #tools{position:absolute;left:14px;bottom:14px;z-index:6;display:flex;gap:6px;flex-wrap:wrap}
+  #tools button{font-size:13px;padding:7px 10px;background:rgba(8,14,8,.85)}
+  #help{position:absolute;right:14px;bottom:14px;z-index:5;font-size:12px;color:#9a9;text-align:right;line-height:1.6;background:rgba(0,0,0,.55);padding:8px 12px;pointer-events:none}
+  #history .paper{width:min(820px,94vw);max-height:88vh;overflow:auto;background:#101410;color:#cfc;padding:22px 26px;border:1px solid #2f4a2f;position:relative}
+  #history table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+  #history th{color:#8c8;text-align:left;border-bottom:1px solid #2f4a2f;padding:5px}
+  #history td{border-bottom:1px solid #1d2a1d;padding:5px;vertical-align:top}
+  #history .good{color:#8f8}#history .bad{color:#f88}#history .warn{color:#fc6}
+  #history .close{position:absolute;top:10px;right:12px}
+  #loading{position:absolute;inset:0;z-index:40;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#888;letter-spacing:4px;font-size:14px}
+  #loading b{color:#c22;font-size:34px;letter-spacing:10px;margin-bottom:16px}
+  #intro .card img{width:100%;height:230px;object-fit:cover;object-position:62% 30%;display:block;margin-bottom:8px;background:#050202}
+</style>
+</head>
+<body>
+<div id="game">
+  <iframe id="world" src="render-cabina.html?game" allow="autoplay"></iframe>
+  <div id="scene">
+    <div id="sign">HOTEL MIRAFLORES · RECEPCIÓN</div>
+    <div id="backdoor" title="Persiana: clic para cerrarla"><canvas id="lobby" width="200" height="300"></canvas><div id="blind"></div><div id="doorlabel">PUERTA · clic = PERSIANA</div></div>
+    <div id="elevator"><div class="lamp" id="elevLamp">1</div></div>
+    <div id="lampglow"></div>
+    <div id="desk"></div>
+    <div id="phone" class="obj" title="Contestar"><div class="handset"></div><div class="dial"></div><div class="led"></div><div class="label">TELÉFONO</div></div>
+    <div id="monitor" class="obj" title="Cámaras"><canvas id="cam" width="320" height="200"></canvas><div class="label">CÁMARAS</div></div>
+    <div id="book" class="obj" title="Libro de registro">REGISTRO<br>DE HUÉSPEDES<div class="label">LIBRO</div></div>
+  </div>
+  <canvas id="grain" width="256" height="256"></canvas>
+  <div id="vignette"></div>
+
+  <div id="hud">
+    <div><div id="clock">12:00 AM</div><div id="night">NOCHE 1</div></div>
+    <div class="meters">
+      <div>PRESENCIA <span id="presence">○○○</span></div>
+      <div>QUEJAS <span id="complaints">○○○</span></div>
+    </div>
+  </div>
+
+  <div id="callpanel">
+    <div id="callerid"><span id="cid">LLAMADA ENTRANTE</span><span id="ctime">--</span></div>
+    <div id="subs"></div>
+    <div id="timerbar"><div id="tfill"></div></div>
+    <div class="btns">
+      <button id="qName">¿Su nombre?</button>
+      <button id="qRoom">¿Qué habitación?</button>
+      <button id="qCam">Ver cámara</button>
+      <button id="qBook">Revisar registro</button>
+    </div>
+    <div class="btns">
+      <button id="accept" class="ok">✔ Enviar al botones</button>
+      <button id="reject" class="no">✖ Colgar</button>
+    </div>
+    <div id="notes"></div>
+  </div>
+
+  <div id="registry" class="modal"><div class="paper">
+    <button class="close" id="closeBook">Cerrar ✖</button>
+    <h2>Registro de huéspedes</h2>
+    <div class="sub" id="regDate"></div>
+    <div class="cols" id="regCols"></div>
+    <div class="memorial">
+      <b>⚠ AVISO DE GERENCIA:</b> El PISO 4 está clausurado desde el incendio del 14 de junio de 1987. No hay habitaciones activas en ese piso.<br>
+      Este hotel tiene habitaciones del 01 al 08 en los pisos 1, 2 y 3. No existe la habitación 13 en ningún piso.<br><br>
+      <i>En memoria de los huéspedes que no salieron aquella noche:</i><br>
+      Elena Varela (402) · Tomás Ibarra (405) · Rosa Mercado (407) · Ignacio Del Solar (401) · Aurelio Montes y su hija Clara (408)
+    </div>
+    <div class="memorial"><b>📁 EXPEDIENTES — lo que sabemos de ellos</b><div class="files" id="files"></div></div>
+  </div></div>
+
+  <div id="camview" class="modal"><div class="wrap">
+    <canvas id="bigcam" width="640" height="400"></canvas><br>
+    <button id="closeCam">Volver ✖</button>
+  </div></div>
+
+  <div id="ringbar">☎ ¡SUENA EL TELÉFONO! — clic en el teléfono o ESPACIO</div>
+  <div id="knockbar">✊ Golpean el vidrio — clic en la ventanilla o P para bajar la persiana</div>
+  <div id="tools"><button id="tBook">📖 Registro</button><button id="tLog">📋 Historial (H)</button><button id="tBlind">🚪 Persiana (P)</button></div>
+  <div id="help">🖱 Mueve el ratón para mirar · pasa sobre los objetos para ver qué hacen<br>📞 Teléfono: contestar · 📖 Libro: registro · 📹 Monitores: cámaras · 🔌 Centralita: historial · 🚪 Ventanilla: persiana</div>
+  <div id="history" class="modal"><div class="paper">
+    <button class="close" id="closeLog">Cerrar ✖</button>
+    <h2 style="color:#e6f5e6">📋 Historial de llamadas</h2>
+    <div id="logSub" style="color:#8a8;font-size:13px"></div>
+    <table><thead><tr><th>Hora</th><th>Llamó como</th><th>Dijo</th><th>Tu decisión</th><th>Resultado</th></tr></thead><tbody id="logBody"></tbody></table>
+  </div></div>
+  <div id="loading"><b>LÍNEA NOCTURNA</b><span id="loadMsg">abriendo el Hotel Miraflores…</span></div>
+  <div id="toast"></div>
+  <div id="flash"></div>
+  <div id="jump"><canvas id="jumpc"></canvas></div>
+
+  <div id="title" class="screen show">
+    <h1>LÍNEA NOCTURNA</h1>
+    <h3>Hotel Miraflores · Recepcionista del turno de noche</h3>
+    <p>Trabajas de 12:00 AM a 6:00 AM. El teléfono sonará. Algunos son huéspedes reales que necesitan ayuda.<br><b>Otros llevan muertos desde 1987.</b></p>
+    <p>📞 Contesta · 🗣 Pregunta nombre y habitación · 📖 Compara con el registro · 📹 Mira la cámara del cuarto.<br>
+    Si es real: <b style="color:#9f9">envía al botones</b>. Si es un fantasma: <b style="color:#f99">cuelga</b>.</p>
+    <p>🚪 Desde la noche 2, <b>ellos bajan al lobby</b>. Si escuchas golpes en el vidrio, <b>cierra la persiana</b> (clic en la puerta o tecla <b>P</b>) antes de que entren.</p>
+    <p>3 fantasmas dentro = te encuentran. 3 huéspedes ignorados = te despiden.<br><i>Usa audífonos. Apaga la luz.</i></p>
+    <div><button id="startBtn">EMPEZAR TURNO</button></div>
+    <p id="saveInfo" style="font-size:13px;color:#777"></p>
+  </div>
+  <div id="intro" class="screen">
+    <h1 id="introTitle">NOCHE 1</h1>
+    <h3 id="introSub"></h3>
+    <div class="row" id="introCards"></div>
+    <div><button id="introBtn">COMENZAR TURNO ▶</button></div>
+  </div>
+  <div id="endscreen" class="screen">
+    <h1 id="endTitle">6:00 AM</h1>
+    <h3 id="endSub"></h3>
+    <p id="endText"></p>
+    <div id="endBtns"></div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   LÍNEA NOCTURNA — prototipo jugable
+   ========================================================= */
+const $ = s => document.querySelector(s);
+const rnd = (a,b) => a + Math.random()*(b-a);
+const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+const chance = p => Math.random() < p;
+
+const HOUR_MS = 40000;          // 1 hora de juego = 40 s reales
+const RING_LIMIT = 10000;       // si no contestas en 10 s, cuelgan
+const LIVING = ["Carlos Ruiz","María Torres","Jorge Salas","Lucía Paredes","Andrés Quispe","Valeria Ríos","Diego Mendoza","Sofía Castro","Raúl Vega","Paola Huamán","Martín Flores","Camila Rojas","Luis Herrera","Ana Gutiérrez","Pedro Navarro","Gabriela León","Óscar Benítez","Julia Salinas","Hugo Cárdenas","Patricia Molina"];
+const DEAD = ["Elena Varela","Tomás Ibarra","Rosa Mercado","Ignacio Del Solar","Aurelio Montes","Clara Montes"];
+const ROOMS = []; [1,2,3].forEach(f=>{for(let r=1;r<=8;r++)ROOMS.push(f*100+r)});
+const FAKE_ROOMS = [401,402,405,407,408,113,213,313,"el sótano"];
+
+const GUEST_REQ = ["¿Me podrían subir toallas limpias, por favor?","El aire acondicionado no prende. ¿Pueden mandar a alguien?","Pedí un sándwich hace una hora y no llega.","Se me trabó la puerta del baño, ¿pueden subir?","Necesito otra almohada, la mía está muy dura.","La tele no agarra ningún canal. ¿Alguien me ayuda?","Se fue la luz del cuarto. ¿Pueden revisar?","¿Me pueden subir un cargador? Se me olvidó el mío."];
+const GHOST_REQ = ["Hace mucho frío aquí... ¿pueden subir a abrirme? La puerta está cerrada desde afuera.","Mi hija salió al pasillo y no vuelve. Por favor, suban.","Huele a humo... ¿alguien puede subir? Nadie contesta en el pasillo.","Necesito que alguien suba. Ahora. Solo... suba.","Mis toallas están mojadas. No dejan de mojarse. Suba otras.","Escucho a alguien tocando la pared. Desde adentro. ¿Pueden venir?"];
+const GHOST_ODD = ["Dígale a mi esposo que el baile ya empezó, que ya son las once del 87.","¿Ya llegó el telegrama de mi mamá?","La radio dice que hay que quedarse en los cuartos. ¿Es verdad?","Llevo mucho tiempo esperando... mucho tiempo.","No veo mis manos. Está muy oscuro."];
+/* ---------- LOS MALOS ---------- */
+const VILLAINS = [
+ {id:"novia", nombre:"LA NOVIA", real:"Elena Varela", hab:402, night:1, sound:"drip", pitch:[.55,.85], rate:.8,
+  desc:"Se iba a casar la mañana del 15 de junio. Murió con el vestido puesto, esperando a su novio. Los bomberos la encontraron empapada.",
+  tell:"Pide toallas o pregunta por su novio y el baile. En la línea se oye AGUA GOTEANDO.",
+  req:["¿Me sube toallas? Estoy empapada... no dejo de mojarme.","¿Ha visto a Rodrigo, mi novio? Me dijo que me esperaba en el baile.","Mi vestido pesa mucho. Está lleno de agua. ¿Sube a ayudarme?"],
+  odd:["El baile ya empezó, ¿verdad? Escucho la orquesta.","Dígale a Rodrigo que lo sigo esperando. Que lo voy a esperar siempre."]},
+ {id:"botones", nombre:"EL BOTONES", real:"Tomás Ibarra", hab:405, night:1, sound:"keys", pitch:[.45,.75], rate:.95,
+  desc:"Subió al cuarto piso a avisar del incendio y nunca bajó. Todavía cree que trabaja aquí. Busca a alguien que lo reemplace... para siempre.",
+  tell:"Habla MUY formal ('señor recepcionista'), conoce el hotel mejor que tú. Se escuchan LLAVES sonando.",
+  req:["Señor recepcionista, se requiere personal en el cuarto piso. Urgente.","Disculpe, señor. El huésped pide que suba usted. Personalmente.","Habla Tomás, del turno de noche. ¿Quién lo autorizó a usted a estar en mi recepción?"],
+  odd:["Las llaves del cuarto piso las tengo yo. Siempre las he tenido.","Mi turno no termina, señor. Nunca termina."]},
+ {id:"nina", nombre:"LA NIÑA CLARA", real:"Clara Montes", hab:408, night:2, sound:"musicbox", pitch:[1.7,2], rate:.9,
+  desc:"Tenía 8 años. Se escondió debajo de la cama durante el incendio y su papá nunca la encontró. Todavía juega a las escondidas.",
+  tell:"Voz de NIÑA, muy aguda. Busca a su papá o quiere jugar. Se oye una CAJITA MUSICAL.",
+  req:["¿Usted ha visto a mi papá? Me dijo que no saliera del cuarto.","Hola... ¿quiere jugar a las escondidas? Yo ya lo encontré a usted.","Hay mucho humo debajo de la cama. ¿Puede venir a buscarme?"],
+  odd:["Tengo ocho años. Siempre tengo ocho años.","Mi muñeca dice que usted está solito allá abajo."]},
+ {id:"quemado", nombre:"EL QUEMADO", real:"Ignacio Del Solar", hab:401, night:3, sound:"fire", pitch:[.15,.35], rate:.85,
+  desc:"El huésped de la 401. Dicen que fue su cigarro el que empezó todo. Está furioso: grita, tose y exige que le abran la puerta.",
+  tell:"Tose, grita, habla de CALOR y HUMO. La línea CREPITA como fuego.",
+  req:["¡ABRAN LA PUERTA! ¡Está muy caliente aquí adentro!","No puedo respirar... mande a alguien con la llave. ¡Ahora!","¿Por qué nadie sube? ¡Llevo horas llamando! ¡HORAS!"],
+  odd:["Yo no fui. El cigarro ya estaba apagado. YO NO FUI.","Todo huele a quemado. Usted también va a oler a quemado."]},
+ {id:"operadora", nombre:"LA OPERADORA", real:"Rosa Mercado", hab:407, night:4, sound:"echo", pitch:[.9,1.15], rate:1,
+  desc:"La telefonista del hotel en 1987. Escuchó todas las voces de todos los cuartos. Ahora puede IMITAR a cualquier huésped vivo.",
+  tell:"Usa el nombre y cuarto de un huésped REAL. Revisa la CÁMARA: el verdadero huésped duerme o no está. A veces REPITE tus preguntas.",
+  req:[], odd:["...recepción... recepción... recepción...","Conecto su llamada. Un momento, por favor. Un momento. Un momento."]},
+];
+const vById = id => VILLAINS.find(v=>v.id===id);
+const NIGHT_INTRO = {
+  1:{sub:"Esta noche te llaman ellos dos:", ids:["novia","botones"]},
+  2:{sub:"Alguien nuevo quiere jugar contigo:", ids:["nina"]},
+  3:{sub:"El que empezó el incendio está despierto:", ids:["quemado"]},
+  4:{sub:"Ella escuchaba todas las llamadas. Ahora habla con la voz de los vivos:", ids:["operadora"]},
+  5:{sub:"14 de junio. Aniversario del incendio. Todos están despiertos.", ids:["novia","botones","nina","quemado","operadora"]},
+};
+
+const GUEST_NERVOUS = ["Ah, y... escucho a alguien llorando en el pasillo, ¿es normal?","Por cierto, el ascensor se movió solo hace rato.","Perdón la hora, es que no puedo dormir con tanto ruido."];
+
+/* --------------- ESCENA 3D --------------- */
+const WORLD=document.getElementById('world'); let worldReady=false;
+function W(m){try{WORLD.contentWindow.postMessage(Object.assign({ln:1},m),'*');}catch(e){}}
+addEventListener('message',e=>{const d=e.data; if(!d||!d.ln) return;
+  if(d.ready){worldReady=true; $("#loading").remove();}
+  if(d.act) worldAct(d.act);
+  if(d.key) worldKey(d.key);});
+setTimeout(()=>{ if(!worldReady){ const l=$("#loading"); if(l) l.querySelector('#loadMsg').textContent='cargando la escena 3D (puede tardar en la primera vez)…'; } },6000);
+function closeModals(){ $("#registry").classList.remove("show"); $("#camview").classList.remove("show"); $("#history").classList.remove("show"); if(S) S.camOpen=false; }
+function worldAct(a){
+  if(!S||S.over) return;
+  if(a==='phone'){ if(S.phase==='ringing') answer(); else if(S.phase==='incall') toast('Estás en una llamada. Decide: enviar al botones o colgar.'); else toast('El teléfono está en silencio... por ahora.'); }
+  if(a==='book'){ closeModals(); $("#registry").classList.add("show"); }
+  if(a==='cams'){ if(S.phase==='incall') openCam(); else toast('Las cámaras de los cuartos solo se activan durante una llamada.'); }
+  if(a==='log'){ closeModals(); showLog(); }
+  if(a==='blind') toggleBlind();
+}
+function worldKey(k){ if(!S||S.over) return; if(k==='Space') answer(); if(k==='KeyP') toggleBlind(); if(k==='KeyH'){ const open=$("#history").classList.contains("show"); closeModals(); if(!open) showLog(); } if(k==='Escape') closeModals(); }
+function logCall(c, decision, outcome, cls){
+  if(!S.log) S.log=[];
+  S.log.unshift({hora:fmtClock(), id:c.id, dijo:[c.asked.name?`nombre: ${c.name}`:'', c.asked.room?`hab.: ${c.room}`:''].filter(Boolean).join(' · ')||'—', decision, outcome, cls});
+}
+function showLog(){
+  const L=S.log||[];
+  $("#logSub").textContent=`Noche ${S.night} · ${L.length} llamada(s) · Presencias: ${S.presence}/3 · Quejas: ${S.complaints}/3`;
+  $("#logBody").innerHTML = L.length ? L.map(r=>`<tr><td>${r.hora}</td><td>${r.id}</td><td>${r.dijo}</td><td>${r.decision}</td><td class="${r.cls}">${r.outcome}</td></tr>`).join("") : `<tr><td colspan="5" style="color:#777">Todavía no hay llamadas esta noche.</td></tr>`;
+  $("#history").classList.add("show");
+}
+
+/* --------------- ESTADO --------------- */
+let S = null;
+let save = JSON.parse(localStorage.getItem("lineaNocturna")||'{"night":1}');
+$("#saveInfo").textContent = save.night>1 ? `Progreso guardado: Noche ${save.night}` : "";
+
+function diff(n){
+  return {
+    callTime: Math.max(18, 36 - n*3.5)*1000,
+    ghostChance: Math.min(.65, .33 + n*.07),
+    wNonexist: [.5,.3,.15,.08,.04][n-1],
+    wVacant:   [.5,.5,.45,.37,.3][n-1],
+    voiceDistort: [1,.75,.5,.3,.15][n-1],
+    spoofId: n>=3,
+    herring: (n-1)*.12,
+    oddLine: [.8,.6,.45,.3,.2][n-1],
+  };
+}
+
+function newNight(n){
+  const reg = {};
+  const names = [...LIVING].sort(()=>Math.random()-.5);
+  ROOMS.forEach(r=>{ reg[r] = chance(.62) ? names.pop() : null; });
+  S = {night:n, d:diff(n), reg, t:0, presence:0, complaints:0, call:null, phase:"idle",
+       nextCall:4000, last:performance.now(), over:false, camOpen:false, flickerT:0,
+       visit:null, blindUntil:0, blindCool:0, lobbyV:null, lastV:null};
+  renderRegistry(); updateHud(); S.log=[];
+  $("#blind").classList.remove("closed"); W({ring:false,incall:false,blind:false,visit:null,presence:0,lobby:null});
+}
+
+/* --------------- GENERAR LLAMADAS --------------- */
+function makeCall(){
+  const d = S.d;
+  const occupied = ROOMS.filter(r=>S.reg[r]);
+  const vacant = ROOMS.filter(r=>!S.reg[r]);
+  const c = {ghost:false, asked:{name:false,room:false}, notes:[]};
+  if(!chance(d.ghostChance)){
+    const room = pick(occupied);
+    Object.assign(c,{room, name:S.reg[room], id:`HAB ${room}`, cam:"onphone",
+      req:pick(GUEST_REQ), extra: chance(d.herring)?pick(GUEST_NERVOUS):"",
+      distort:false, staticLvl: chance(d.herring)?.07:.015, pitch:rnd(.85,1.25), rate:rnd(.95,1.1)});
+  } else {
+    c.ghost = true;
+    const v = c.v = pick(VILLAINS.filter(x=>x.night<=S.night));
+    const x = Math.random();
+    let type = x<d.wNonexist ? "nonexist" : x<d.wNonexist+d.wVacant ? "vacant" : "occupied";
+    if(type==="vacant" && !vacant.length) type="occupied";
+    if(v.id==="operadora") type="occupied";
+    c.distort = chance(d.voiceDistort);
+    c.staticLvl = c.distort ? .13 : .03;
+    c.pitch = (c.distort || v.id==="nina") ? rnd(...v.pitch) : rnd(.85,1.2);
+    c.rate = c.distort ? v.rate*rnd(.85,1) : rnd(.9,1.05);
+    c.req = (!v.req.length || (S.night>=3 && chance(.3))) ? pick(GUEST_REQ) : pick(v.req);
+    c.extra = chance(d.oddLine) ? pick(v.odd) : "";
+    c.sigVol = [.55,.42,.3,.2,.14][S.night-1];
+    if(type==="nonexist"){
+      c.room = chance(.6) ? v.hab : pick(FAKE_ROOMS); c.cam = "nosignal";
+      c.name = chance(.75) ? v.real : pick(DEAD);
+      c.id = d.spoofId ? `HAB ${typeof c.room==="number"?c.room:"???"}` : pick(["HAB ???","EXT 0000","— — —"]);
+    } else if(type==="vacant"){
+      c.room = pick(vacant);
+      c.name = chance(.6) ? v.real : pick(LIVING);
+      c.cam = (S.night<=2 && chance(.5)) ? "figure" : "empty";
+      c.id = d.spoofId || chance(.4) ? `HAB ${c.room}` : "HAB ???";
+    } else { // se hace pasar por un huésped real
+      c.room = pick(occupied);
+      c.id = `HAB ${c.room}`;
+      let camClue = chance(.6), nameClue = !camClue || chance(.4);
+      if(v.id==="operadora"){ camClue = true; nameClue = false; }   // imita perfecto: solo la cámara la delata
+      c.cam = camClue ? pick(["asleep","asleep","empty","figure"]) : "onphone";
+      c.name = nameClue ? (chance(.5)?v.real:pick(LIVING.filter(n=>n!==S.reg[c.room]))) : S.reg[c.room];
+    }
+  }
+  return c;
+}
+
+/* --------------- AUDIO --------------- */
+let AC, master, noiseBuf, staticGain, ringNodes=null, humGain, heartTimer=null;
+function initAudio(){
+  if(AC) return;
+  AC = new (window.AudioContext||window.webkitAudioContext)();
+  master = AC.createGain(); master.gain.value = .9; master.connect(AC.destination);
+  noiseBuf = AC.createBuffer(1, AC.sampleRate*2, AC.sampleRate);
+  const ch = noiseBuf.getChannelData(0); for(let i=0;i<ch.length;i++) ch[i]=Math.random()*2-1;
+  // zumbido ambiental
+  humGain = AC.createGain(); humGain.gain.value=.05; humGain.connect(master);
+  [55,55.7,110.3].forEach((f,i)=>{const o=AC.createOscillator();o.type=i<2?"sine":"triangle";o.frequency.value=f;const g=AC.createGain();g.gain.value=i<2?.5:.12;o.connect(g).connect(humGain);o.start();});
+  const n = AC.createBufferSource(); n.buffer=noiseBuf; n.loop=true;
+  const lp = AC.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=300;
+  const ng = AC.createGain(); ng.gain.value=.25; n.connect(lp).connect(ng).connect(humGain); n.start();
+  // estática de la línea
+  const s = AC.createBufferSource(); s.buffer=noiseBuf; s.loop=true;
+  const bp = AC.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=2200; bp.Q.value=.6;
+  staticGain = AC.createGain(); staticGain.gain.value=0;
+  s.connect(bp).connect(staticGain).connect(master); s.start();
+}
+function startRing(){
+  stopRing();
+  const o1=AC.createOscillator(), o2=AC.createOscillator(), lfo=AC.createOscillator();
+  o1.frequency.value=440; o2.frequency.value=480; lfo.type="square"; lfo.frequency.value=20;
+  const g=AC.createGain(); g.gain.value=0; const lg=AC.createGain(); lg.gain.value=.08;
+  const env=AC.createGain(); env.gain.value=0;
+  lfo.connect(lg).connect(g.gain); o1.connect(g); o2.connect(g); g.connect(env).connect(master);
+  [o1,o2,lfo].forEach(o=>o.start());
+  const t=AC.currentTime; for(let i=0;i<6;i++){env.gain.setValueAtTime(1,t+i*3);env.gain.setValueAtTime(0,t+i*3+1.6);}
+  ringNodes=[o1,o2,lfo];
+}
+function stopRing(){ if(ringNodes){ringNodes.forEach(o=>{try{o.stop()}catch(e){}});ringNodes=null;} }
+function setStatic(v){ if(AC) staticGain.gain.setTargetAtTime(v,AC.currentTime,.1); }
+function blip(freq=900,dur=.08,vol=.15,type="square"){
+  const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=freq;g.gain.value=vol;
+  g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+dur);o.connect(g).connect(master);o.start();o.stop(AC.currentTime+dur);
+}
+function whisper(dur=1.5,vol=.2){
+  const s=AC.createBufferSource();s.buffer=noiseBuf;
+  const bp=AC.createBiquadFilter();bp.type="bandpass";bp.Q.value=4;
+  bp.frequency.setValueAtTime(rnd(600,1400),AC.currentTime);bp.frequency.linearRampToValueAtTime(rnd(1500,3000),AC.currentTime+dur);
+  const g=AC.createGain();g.gain.setValueAtTime(0,AC.currentTime);g.gain.linearRampToValueAtTime(vol,AC.currentTime+dur*.3);g.gain.linearRampToValueAtTime(0,AC.currentTime+dur);
+  const pan=AC.createStereoPanner();pan.pan.value=rnd(-1,1);
+  s.connect(bp).connect(g).connect(pan).connect(master);s.start();s.stop(AC.currentTime+dur);
+}
+function knock(n=3){ for(let i=0;i<n;i++) setTimeout(()=>{const o=AC.createOscillator(),g=AC.createGain();o.frequency.setValueAtTime(140,AC.currentTime);o.frequency.exponentialRampToValueAtTime(50,AC.currentTime+.12);g.gain.setValueAtTime(.5,AC.currentTime);g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+.2);o.connect(g).connect(master);o.start();o.stop(AC.currentTime+.2);},i*rnd(250,450)); }
+function heartbeat(on){
+  clearInterval(heartTimer); if(!on) return;
+  heartTimer=setInterval(()=>{[0,180].forEach(dl=>setTimeout(()=>{const o=AC.createOscillator(),g=AC.createGain();o.frequency.value=60;g.gain.setValueAtTime(.35,AC.currentTime);g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+.18);o.connect(g).connect(master);o.start();o.stop(AC.currentTime+.2);},dl));}, S.presence>=2?700:1100);
+}
+/* sonido característico de cada malo, de fondo en la llamada */
+let sigTimer=null, sigGain=null, sigExtra=null;
+function tone(freq,dur,type,vol,dest,drop){
+  const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;o.type=type;o.frequency.setValueAtTime(freq,t);
+  if(drop) o.frequency.exponentialRampToValueAtTime(freq*drop,t+dur);
+  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g).connect(dest||master);o.start(t);o.stop(t+dur+.02);
+}
+function noiseHit(dur,vol,hp,dest){
+  const s=AC.createBufferSource();s.buffer=noiseBuf;const f=AC.createBiquadFilter();f.type="highpass";f.frequency.value=hp;
+  const g=AC.createGain(),t=AC.currentTime;g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);
+  s.connect(f).connect(g).connect(dest||master);s.start(t,Math.random());s.stop(t+dur+.02);
+}
+const MELODY=[659,622,659,622,659,494,587,523,440,0,262,330,440,494];
+function startSig(type,vol){
+  stopSig(); if(!type||!AC) return;
+  sigGain=AC.createGain(); sigGain.gain.value=vol; sigGain.connect(master);
+  let i=0;
+  const steps={
+    drip:[380,()=>{ if(chance(.6)) tone(rnd(900,1600),.14,"sine",.5,sigGain,.4); }],
+    keys:[1400,()=>{ for(let k=0;k<rnd(3,6);k++) setTimeout(()=>{ if(!sigGain)return; noiseHit(.04,.5,5000,sigGain); tone(rnd(3200,5200),.06,"triangle",.15,sigGain); },k*rnd(50,110)); }],
+    musicbox:[430,()=>{ const n=MELODY[i++%MELODY.length]; if(n) tone(n*2*rnd(.985,1.015),.7,"triangle",.35,sigGain); }],
+    fire:[55,()=>{ if(chance(.45)) noiseHit(rnd(.005,.03),rnd(.1,.6),2500,sigGain); }],
+    echo:[2600,()=>{ noiseHit(.03,.6,1500,sigGain); setTimeout(()=>{ if(sigGain){ tone(440,.35,"sine",.12,sigGain); tone(480,.35,"sine",.12,sigGain);} },200); }],
+  };
+  if(type==="fire"){ const s=AC.createBufferSource();s.buffer=noiseBuf;s.loop=true;const lp=AC.createBiquadFilter();lp.type="lowpass";lp.frequency.value=180;const g=AC.createGain();g.gain.value=.6;s.connect(lp).connect(g).connect(sigGain);s.start();sigExtra=s; }
+  const [ms,fn]=steps[type]; fn(); sigTimer=setInterval(fn,ms);
+}
+function stopSig(){ clearInterval(sigTimer); sigTimer=null; if(sigExtra){try{sigExtra.stop()}catch(e){} sigExtra=null;} if(sigGain){ const g=sigGain; g.gain.setTargetAtTime(0,AC.currentTime,.05); setTimeout(()=>g.disconnect(),400); sigGain=null; } }
+function glassKnock(){ for(let i=0;i<3;i++) setTimeout(()=>{ if(!AC)return; tone(rnd(1800,2400),.08,"triangle",.25); noiseHit(.03,.35,3000); },i*rnd(180,260)); }
+
+function scream(mult=1){
+  const t=AC.currentTime;
+  const s=AC.createBufferSource();s.buffer=noiseBuf;const g=AC.createGain();g.gain.setValueAtTime(1,t);g.gain.linearRampToValueAtTime(0,t+2.2);s.connect(g).connect(master);s.start();s.stop(t+2.3);
+  [180*mult,233*mult,311*mult].forEach(f=>{const o=AC.createOscillator();o.type="sawtooth";o.frequency.setValueAtTime(f*3,t);o.frequency.exponentialRampToValueAtTime(f*.5,t+2);const og=AC.createGain();og.gain.setValueAtTime(.35,t);og.gain.linearRampToValueAtTime(0,t+2.2);o.connect(og).connect(master);o.start();o.stop(t+2.3);});
+}
+
+/* --------------- VOZ --------------- */
+let voices=[];
+function loadVoices(){ voices = speechSynthesis.getVoices().filter(v=>v.lang && v.lang.toLowerCase().startsWith("es")); }
+if("speechSynthesis" in window){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; }
+let typeTimer=null;
+function say(text){
+  const c=S.call; if(!c) return;
+  const shown = c.distort ? glitch(text) : text;
+  const el=$("#subs"); el.className = c.distort?"ghosty":""; el.textContent="";
+  clearInterval(typeTimer); let i=0;
+  typeTimer=setInterval(()=>{el.textContent=shown.slice(0,++i); if(i>=shown.length)clearInterval(typeTimer);}, c.distort?55:32);
+  if("speechSynthesis" in window){
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text); u.lang="es-ES";
+    if(voices.length){ if(!c.voice) c.voice=pick(voices); u.voice=c.voice; }
+    u.pitch=c.pitch; u.rate=c.rate; u.volume=1;
+    speechSynthesis.speak(u);
+  }
+}
+function glitch(t){ return t.split(" ").map(w=>chance(.18)&&w.length>2?w[0]+"-"+w[0]+"-"+w:w).join(" ").replace(/o/g,()=>chance(.08)?"0":"o"); }
+
+/* --------------- FLUJO DE LLAMADA --------------- */
+function ring(){
+  S.call = makeCall(); S.phase="ringing"; S.ringStart=S.t;
+  $("#phone").classList.add("ringing"); startRing(); W({ring:true}); $("#ringbar").style.display='block';
+}
+function answer(){
+  if(S.phase!=="ringing") return;
+  stopRing(); $("#phone").classList.remove("ringing"); $("#phone").classList.add("incall"); W({ring:false,incall:true}); $("#ringbar").style.display='none';
+  S.phase="incall"; S.callStart=S.t;
+  const c=S.call;
+  blip(1200,.05,.1);
+  $("#cid").textContent = "📞 " + c.id; $("#ctime").textContent = fmtClock();
+  $("#notes").textContent=""; $("#callpanel").classList.add("show");
+  ["qName","qRoom","qCam","qBook","accept","reject"].forEach(id=>$("#"+id).disabled=false);
+  setStatic(c.staticLvl);
+  if(c.ghost) startSig(c.v.sound, c.sigVol);
+  const greet = c.ghost ? pick(["¿Aló...? ¿Recepción?","Recepción... ¿hay alguien?","Hola. Hola. ¿Me escucha?"]) : pick(["Buenas noches, ¿recepción?","Aló, ¿recepción? Disculpe la hora.","Hola, buenas."]);
+  say(`${greet} ${c.req} ${c.extra}`.trim());
+}
+function askName(){
+  const c=S.call; c.asked.name=true; $("#qName").disabled=true;
+  const echo = c.ghost && c.v.id==="operadora" && chance(.5) ? "¿Su nombre?... ¿su nombre?... " : "";
+  say(echo + (c.ghost && c.distort ? `Me llamo... ${c.name}. ${c.name}.` : pick([`Soy ${c.name}.`,`${c.name}, estoy registrado.`,`A nombre de ${c.name}.`])));
+  addNote(`Nombre dicho: ${c.name}`);
+}
+function askRoom(){
+  const c=S.call; c.asked.room=true; $("#qRoom").disabled=true;
+  const r = typeof c.room==="number" ? c.room : c.room;
+  const txt = c.ghost && c.distort && typeof r==="number" ? `La ${String(r).split("").join("... ")}.` :
+              typeof r==="number" ? pick([`La ${r}.`,`Habitación ${r}.`,`Estoy en la ${r}.`]) : `Estoy en ${r}. Abajo. Está oscuro.`;
+  const echo = c.ghost && c.v.id==="operadora" && chance(.5) ? "¿Qué habitación?... ¿qué habitación?... " : "";
+  say(echo + txt); addNote(`Habitación dicha: ${r}`);
+}
+function camRoom(){
+  const c=S.call;
+  if(c.asked.room) return c.room;
+  const m=c.id.match(/\d{3}/); return m?+m[0]:null;
+}
+function openCam(){
+  if(S.phase!=="incall") return;
+  const r=camRoom();
+  if(r===null){ addNote("No sabes de qué habitación llama. Pregúntale primero."); return; }
+  S.camOpen=true; S.camRoom=r;
+  S.camMode = (typeof r!=="number" || !ROOMS.includes(r)) ? "nosignal" : (r===S.call.room ? S.call.cam : (S.reg[r]?"asleep":"emptyclean"));
+  $("#camview").classList.add("show"); blip(300,.1,.1,"sawtooth");
+}
+function addNote(t){ S.call.notes.push(t); $("#notes").textContent=S.call.notes.join("  ·  "); }
+
+function endCall(accepted, reason){
+  const c=S.call; if(!c) return;
+  window.speechSynthesis && speechSynthesis.cancel(); clearInterval(typeTimer);
+  setStatic(0); stopRing(); stopSig();
+  $("#callpanel").classList.remove("show"); $("#phone").classList.remove("ringing","incall"); W({ring:false,incall:false}); $("#ringbar").style.display='none';
+  $("#camview").classList.remove("show"); $("#registry").classList.remove("show"); S.camOpen=false;
+  S.phase="idle"; S.call=null; S.nextCall = S.t + rnd(7000,15000);
+  blip(400,.15,.1);
+  if(accepted){
+    if(c.ghost){ logCall(c,'✔ Envió al botones',`☠ Era ${c.v.nombre}`,'bad'); S.presence++; S.lastV=S.lobbyV=c.v; toast(`Era ${c.v.nombre}. ${pick(["Enviaste al botones... nunca regresó.","El ascensor bajó solo. Viene hacia ti.","Algo bajó por las escaleras."])}`); ghostEvent(); }
+    else { logCall(c,'✔ Envió al botones','✔ Huésped real atendido','good'); toast("El huésped quedó atendido. ✔"); }
+  } else {
+    if(c.ghost){ logCall(c, reason==="missed"?'— No contestó':reason==="timeout"?'⌛ Se cortó':'✖ Colgó', `👻 Era ${c.v.nombre} — a salvo`,'good'); toast(reason==="timeout"?`La línea queda en silencio... era ${c.v.nombre}.`:`Bien hecho. Era ${c.v.nombre}. Escuchas una risa en la estática.`); whisper(1.8,.25); }
+    else { logCall(c, reason==="missed"?'— No contestó':reason==="timeout"?'⌛ Se cortó':'✖ Colgó', `⚠ Huésped real (${c.name}) — queja`,'warn'); S.complaints++; toast(reason==="missed"?`Nadie contestó en recepción. ${c.name} pondrá una queja.`:`${c.name} (hab. ${c.room}) era un huésped real. Habrá queja.`); }
+  }
+  updateHud(); checkEnd();
+}
+function ghostEvent(){
+  knock(3); flicker(1200); W({presence:S.presence, lobby:S.lobbyV?S.lobbyV.id:null, lightning:true});
+  const lamp=$("#elevLamp"); lamp.classList.add("on"); let f=1;
+  const iv=setInterval(()=>{lamp.textContent=f; f++; if(f>4){clearInterval(iv);lamp.textContent="4";setTimeout(()=>{lamp.classList.remove("on");lamp.textContent="1"},3000);}},600);
+  heartbeat(S.presence>=1);
+}
+
+/* --------------- HUD / UTIL --------------- */
+function fmtClock(){ const h=Math.floor(S.t/HOUR_MS); const m=Math.floor((S.t%HOUR_MS)/HOUR_MS*60); return `${h===0?12:h}:${String(m).padStart(2,"0")} AM`; }
+function updateHud(){
+  $("#clock").textContent=fmtClock(); $("#night").textContent=`NOCHE ${S.night}`;
+  $("#presence").textContent="●".repeat(S.presence)+"○".repeat(Math.max(0,3-S.presence));
+  $("#complaints").textContent="●".repeat(S.complaints)+"○".repeat(Math.max(0,3-S.complaints));
+  $("#presence").style.color=S.presence?"#f44":""; $("#complaints").style.color=S.complaints?"#fa4":"";
+}
+let toastT; function toast(t){ const el=$("#toast"); el.textContent=t; el.style.opacity=1; clearTimeout(toastT); toastT=setTimeout(()=>el.style.opacity=0,4200); }
+function flicker(ms){ W({flicker:ms}); const sc=$("#scene"); let n=0; const iv=setInterval(()=>{sc.classList.toggle("dark"); if(++n>ms/90){clearInterval(iv);sc.classList.remove("dark");}},90); }
+
+function renderRegistry(){
+  $("#regDate").textContent=`Noche ${S.night} · Turno 12:00 AM – 6:00 AM · Recepcionista: tú`;
+  $("#regCols").innerHTML=[1,2,3].map(f=>`<table><tr><td colspan="2"><b>Piso ${f}</b></td></tr>`+
+    ROOMS.filter(r=>Math.floor(r/100)===f).map(r=>`<tr><td class="r">${r}</td><td class="${S.reg[r]?"":"vac"}">${S.reg[r]||"— libre —"}</td></tr>`).join("")+`</table>`).join("");
+  const known = VILLAINS.filter(v=>v.night<=S.night);
+  $("#files").innerHTML = known.map(v=>`<div class="file"><canvas width="60" height="84" data-v="${v.id}"></canvas><div><b>${v.nombre}</b> · ${v.real} (${v.hab})<br>🔎 ${v.tell}</div></div>`).join("");
+  document.querySelectorAll("#files canvas").forEach(cv=>portrait(cv,cv.dataset.v));
+}
+
+/* --------------- DIBUJOS DE LOS MALOS --------------- */
+function portrait(cv,id){
+  const ctx=cv.getContext("2d"); ctx.fillStyle="#070303"; ctx.fillRect(0,0,cv.width,cv.height);
+  const g=ctx.createRadialGradient(cv.width/2,cv.height*.4,5,cv.width/2,cv.height*.4,cv.height*.7); g.addColorStop(0,"rgba(120,20,20,.35)"); g.addColorStop(1,"rgba(0,0,0,0)");
+  ctx.fillStyle=g; ctx.fillRect(0,0,cv.width,cv.height);
+  const s = cv.height/125 * (id==="nina"?1.5:1);
+  drawFigure(ctx,id,cv.width/2,cv.height-4,s,0);
+}
+// figura de cuerpo completo. Origen = pies; mide ~110 unidades de alto (niña ~65)
+function drawFigure(ctx,id,cx,by,s,t){
+  ctx.save(); ctx.translate(cx,by); ctx.scale(s,s);
+  const glowEyes=(y,dx,col,w=3,h=2)=>{ctx.save();ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=8;ctx.fillRect(-dx-w,y,w,h);ctx.fillRect(dx,y,w,h);ctx.restore();};
+  switch(id){
+    case "novia":
+      ctx.fillStyle="#cfd5e2";ctx.beginPath();ctx.moveTo(-8,-74);ctx.lineTo(8,-74);ctx.lineTo(24,0);ctx.lineTo(-24,0);ctx.fill();
+      ctx.fillStyle="#b8bfcc";for(let i=-2;i<=2;i++){ctx.fillRect(i*8-1,-60,1,58);}            // pliegues
+      ctx.fillStyle="#cfd5e2";ctx.fillRect(-7,-88,14,16);ctx.fillRect(-12,-86,4,30);ctx.fillRect(8,-86,4,30); // brazos caídos
+      ctx.fillStyle="#050505";ctx.beginPath();ctx.ellipse(0,-97,11,13,0,0,7);ctx.fill();ctx.fillRect(-11,-97,22,34);
+      ctx.fillStyle="#c7ccd2";ctx.beginPath();ctx.ellipse(0,-95,5.5,8.5,0,0,7);ctx.fill();
+      ctx.fillStyle="#000";ctx.fillRect(-4,-98,3,3);ctx.fillRect(1,-98,3,3);ctx.fillRect(-1.5,-91,3,4);
+      ctx.fillStyle="rgba(235,240,255,.28)";ctx.beginPath();ctx.moveTo(-12,-110);ctx.lineTo(12,-110);ctx.lineTo(30,-30);ctx.lineTo(-30,-30);ctx.fill();
+      ctx.fillStyle="#7ab";for(let i=0;i<4;i++){ctx.fillRect(-18+i*12,((t/9+i*13)%22),1.5,4);}     // goteo
+      break;
+    case "botones":
+      ctx.fillStyle="#111";ctx.fillRect(-9,-40,7,40);ctx.fillRect(2,-40,7,40);                  // piernas
+      ctx.fillStyle="#7a1212";ctx.fillRect(-12,-80,24,42);ctx.fillRect(-16,-78,5,34);ctx.fillRect(11,-78,5,34); // saco
+      ctx.fillStyle="#d4a63a";for(let i=0;i<4;i++){ctx.fillRect(-1,-76+i*9,2,2);}             // botones dorados
+      ctx.fillStyle="#2b2522";ctx.beginPath();ctx.ellipse(0,-90,9,11,0,0,7);ctx.fill();         // cara quemada
+      ctx.fillStyle="#7a1212";ctx.fillRect(-8,-106,16,8);ctx.fillStyle="#111";ctx.fillRect(-9,-99,18,2); // gorrito
+      glowEyes(-92,2,"#fff");
+      ctx.fillStyle="#ddd";ctx.fillRect(-4,-85,8,1.5);                                          // sonrisa
+      ctx.strokeStyle="#c9a24a";ctx.lineWidth=1;ctx.beginPath();ctx.arc(17,-42,4,0,7);ctx.stroke(); // llavero
+      ctx.fillStyle="#c9a24a";ctx.fillRect(15,-38+Math.sin(t/120)*1.5,2,7);ctx.fillRect(19,-37,2,6);
+      break;
+    case "nina":
+      ctx.fillStyle="#6a5560";ctx.beginPath();ctx.moveTo(-6,-40);ctx.lineTo(6,-40);ctx.lineTo(14,-12);ctx.lineTo(-14,-12);ctx.fill(); // vestido
+      ctx.fillStyle="#bfb7b0";ctx.fillRect(-7,-12,4,12);ctx.fillRect(3,-12,4,12);              // piernas
+      ctx.fillStyle="#0a0505";ctx.beginPath();ctx.arc(-11,-50,5,0,7);ctx.arc(11,-50,5,0,7);ctx.fill(); // colitas
+      ctx.fillStyle="#d8d0c8";ctx.beginPath();ctx.ellipse(0,-50,9,10,0,0,7);ctx.fill();
+      ctx.fillStyle="#0a0505";ctx.fillRect(-9,-60,18,5);
+      ctx.fillStyle="#000";ctx.beginPath();ctx.ellipse(-3.5,-50,2.5,3.5,0,0,7);ctx.ellipse(3.5,-50,2.5,3.5,0,0,7);ctx.fill();
+      ctx.strokeStyle="#300";ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(-4,-44);ctx.lineTo(4,-44);ctx.stroke();
+      for(let i=-3;i<=3;i+=2){ctx.beginPath();ctx.moveTo(i,-45.5);ctx.lineTo(i,-42.5);ctx.stroke();} // boca cosida
+      ctx.fillStyle="#8a6a4a";ctx.fillRect(9,-30,6,9);ctx.beginPath();ctx.arc(12,-32,3,0,7);ctx.fill(); // muñeca
+      break;
+    case "quemado":
+      ctx.fillStyle="#140c08";ctx.fillRect(-10,-42,8,42);ctx.fillRect(2,-42,8,42);
+      ctx.fillRect(-14,-86,28,46);ctx.fillRect(-19,-84,6,40);ctx.fillRect(13,-84,6,46);
+      ctx.beginPath();ctx.ellipse(0,-96,10,12,0,0,7);ctx.fill();
+      ctx.save();ctx.strokeStyle="#ff6a10";ctx.shadowColor="#f60";ctx.shadowBlur=6;ctx.lineWidth=1;
+      [[-10,-80,4,-62],[6,-84,-2,-60],[-6,-56,8,-44],[-16,-70,-12,-52],[15,-76,12,-58],[-4,-104,3,-92],[-8,-30,-5,-10],[6,-34,4,-14]].forEach(([a,b,c2,d])=>{ctx.beginPath();ctx.moveTo(a,b);ctx.lineTo((a+c2)/2+2,(b+d)/2);ctx.lineTo(c2,d);ctx.stroke();});
+      ctx.restore();
+      glowEyes(-99,2,"#ffb020",3.5,2.5);
+      ctx.save();ctx.fillStyle="#ff4a00";ctx.shadowColor="#f40";ctx.shadowBlur=10;ctx.fillRect(-3,-91,6,3);ctx.restore();
+      ctx.fillStyle="rgba(120,120,120,.18)";for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(Math.sin(t/400+i)*6,-115-i*10-((t/30)%10),6+i*2,0,7);ctx.fill();} // humo
+      break;
+    case "operadora":
+      ctx.fillStyle="#3a3a40";ctx.beginPath();ctx.moveTo(-10,-78);ctx.lineTo(10,-78);ctx.lineTo(16,0);ctx.lineTo(-16,0);ctx.fill();
+      ctx.fillRect(-15,-76,5,36);ctx.fillRect(10,-76,5,36);
+      ctx.save();ctx.translate(0,-90);ctx.rotate(.35);
+      ctx.fillStyle="#1a1410";ctx.beginPath();ctx.ellipse(0,-2,11,12,0,0,7);ctx.fill();          // pelo recogido
+      ctx.fillStyle="#bdb8b0";ctx.beginPath();ctx.ellipse(0,1,7.5,10,0,0,7);ctx.fill();
+      ctx.fillStyle="#fff";ctx.fillRect(-5,-2,3,2);ctx.fillRect(2,-2,3,2);
+      ctx.fillStyle="#000";ctx.beginPath();ctx.ellipse(0,7,2.5,5+Math.abs(Math.sin(t/300))*2,0,0,7);ctx.fill(); // boca abierta
+      ctx.strokeStyle="#111";ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,-1,10,Math.PI*1.05,Math.PI*1.95);ctx.stroke(); // audífonos
+      ctx.fillStyle="#111";ctx.fillRect(-11,-3,4,6);ctx.fillRect(7,-3,4,6);ctx.beginPath();ctx.moveTo(-9,3);ctx.lineTo(-4,8);ctx.stroke();
+      ctx.restore();
+      ctx.strokeStyle="#222";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-14,-86);ctx.bezierCurveTo(-30,-50,-10,-20,-34,0);ctx.stroke(); // cable al piso
+      break;
+  }
+  ctx.restore();
+}
+// cara gigante para el susto final (centrada en 0,0)
+function drawFace(ctx,id,t){
+  const eyesHollow=(dx,y,rx,ry,pup)=>{ctx.fillStyle="#000";[-dx,dx].forEach(x=>{ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,7);ctx.fill();});
+    if(pup){ctx.fillStyle=pup;ctx.shadowColor=pup;ctx.shadowBlur=20;[-dx,dx].forEach(x=>{ctx.beginPath();ctx.arc(x+rnd(-4,4),y+4,7,0,7);ctx.fill();});ctx.shadowBlur=0;}};
+  const mouth=(y,rx,ry,col="#000")=>{ctx.fillStyle=col;ctx.beginPath();ctx.ellipse(0,y,rx,ry+Math.sin(t/40)*12,0,0,7);ctx.fill();};
+  switch(id){
+    case "novia":
+      ctx.fillStyle="#050505";ctx.beginPath();ctx.ellipse(0,40,250,330,0,0,7);ctx.fill();
+      ctx.fillStyle="#c9d0d8";ctx.beginPath();ctx.ellipse(0,0,150,215,0,0,7);ctx.fill();
+      ctx.fillStyle="#050505";ctx.fillRect(-160,-240,320,90);
+      eyesHollow(58,-40,40,55,"#e8f0ff");
+      ctx.strokeStyle="#4a6a8a";ctx.lineWidth=5;[-58,58].forEach(x=>{ctx.beginPath();ctx.moveTo(x,10);ctx.lineTo(x+rnd(-6,6),180);ctx.stroke();});
+      mouth(110,42,80);
+      ctx.fillStyle="rgba(240,245,255,.22)";ctx.beginPath();ctx.moveTo(-200,-260);ctx.lineTo(200,-260);ctx.lineTo(300,300);ctx.lineTo(-300,300);ctx.fill();
+      break;
+    case "botones":
+      ctx.fillStyle="#7a1212";ctx.fillRect(-200,200,400,200);
+      ctx.fillStyle="#3a302a";ctx.beginPath();ctx.ellipse(0,0,165,215,0,0,7);ctx.fill();
+      ctx.fillStyle="#1a1410";for(let i=0;i<14;i++){ctx.beginPath();ctx.arc(Math.sin(i*7)*120,Math.cos(i*5)*170,18+(i%4)*6,0,7);ctx.fill();} // quemaduras
+      ctx.fillStyle="#7a1212";ctx.fillRect(-120,-290,240,90);ctx.fillStyle="#111";ctx.fillRect(-150,-205,300,22);
+      eyesHollow(62,-50,38,40,"#ffffff");
+      ctx.fillStyle="#000";ctx.beginPath();ctx.ellipse(0,100,120,45+Math.sin(t/40)*10,0,0,Math.PI);ctx.fill();
+      ctx.fillStyle="#e8e0c8";for(let i=-5;i<=5;i++){ctx.fillRect(i*20-7,100,14,22);}
+      break;
+    case "nina":
+      ctx.fillStyle="#0a0505";ctx.beginPath();ctx.arc(-190,-60,80,0,7);ctx.arc(190,-60,80,0,7);ctx.fill();
+      ctx.fillStyle="#ddd5cc";ctx.beginPath();ctx.ellipse(0,0,165,190,0,0,7);ctx.fill();
+      ctx.fillStyle="#0a0505";ctx.beginPath();ctx.ellipse(0,-150,170,70,0,0,Math.PI,true);ctx.fill();
+      eyesHollow(62,-20,46,62,"#ff2020");
+      ctx.strokeStyle="#300";ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(-80,100);ctx.quadraticCurveTo(0,140+Math.sin(t/40)*20,80,100);ctx.stroke();
+      for(let i=-70;i<=70;i+=20){ctx.beginPath();ctx.moveTo(i,95);ctx.lineTo(i+6,135);ctx.stroke();}
+      break;
+    case "quemado":
+      ctx.fillStyle="#140a06";ctx.beginPath();ctx.ellipse(0,0,175,230,0,0,7);ctx.fill();
+      ctx.save();ctx.strokeStyle="#ff6a10";ctx.shadowColor="#f60";ctx.shadowBlur=25;ctx.lineWidth=5;
+      for(let i=0;i<10;i++){const a=i*0.63;ctx.beginPath();ctx.moveTo(Math.cos(a)*40,Math.sin(a)*60);ctx.lineTo(Math.cos(a)*100+rnd(-8,8),Math.sin(a)*130);ctx.lineTo(Math.cos(a+.2)*160,Math.sin(a+.2)*210);ctx.stroke();}
+      ctx.restore();
+      eyesHollow(62,-50,40,44,"#ffb020");
+      ctx.save();ctx.shadowColor="#f40";ctx.shadowBlur=40;mouth(110,60,70,"#ff4a00");ctx.restore();
+      mouth(110,40,50);
+      break;
+    case "operadora":
+    default:
+      ctx.rotate(.25);
+      ctx.fillStyle="#1a1410";ctx.beginPath();ctx.ellipse(0,-40,190,210,0,0,7);ctx.fill();
+      ctx.fillStyle="#bab4ac";ctx.beginPath();ctx.ellipse(0,20,150,230,0,0,7);ctx.fill();
+      eyesHollow(60,-50,34,30,"#ffffff");
+      ctx.fillStyle="#000";ctx.beginPath();ctx.ellipse(0,150,45,140+Math.sin(t/40)*30,0,0,7);ctx.fill(); // boca estirada
+      ctx.strokeStyle="#111";ctx.lineWidth=22;ctx.beginPath();ctx.arc(0,-20,200,Math.PI*1.08,Math.PI*1.92);ctx.stroke();
+      ctx.fillStyle="#111";ctx.fillRect(-215,-40,50,90);ctx.fillRect(165,-40,50,90);
+      ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(-190,40);ctx.quadraticCurveTo(-120,160,-50,130);ctx.stroke();
+      break;
+  }
+}
+
+/* --------------- CÁMARAS --------------- */
+const camSmall=$("#cam").getContext("2d"), camBig=$("#bigcam").getContext("2d");
+function drawCam(ctx,W,H,mode,label){
+  const sx=W/320, sy=H/200; ctx.save(); ctx.scale(sx,sy);
+  ctx.fillStyle="#020802"; ctx.fillRect(0,0,320,200);
+  if(mode==="nosignal"){
+    for(let i=0;i<1400;i++){const v=Math.random()*120|0;ctx.fillStyle=`rgb(${v},${v},${v})`;ctx.fillRect(Math.random()*320,Math.random()*200,2,2);}
+    ctx.fillStyle="#cfc";ctx.font="bold 20px Courier New";ctx.textAlign="center";ctx.fillText("SIN SEÑAL",160,95);
+    ctx.font="11px Courier New";ctx.fillText(`CAM ${label} — NO REGISTRADA`,160,115);ctx.restore();return;
+  }
+  if(mode==="idle"){
+    ctx.fillStyle="#0a1a0a";ctx.fillRect(0,0,320,200);ctx.fillStyle="#3a5a3a";ctx.font="12px Courier New";ctx.textAlign="center";
+    ctx.fillText("CCTV · EN ESPERA",160,100);ctx.fillText("(se activa durante una llamada)",160,118);
+  } else {
+    // cuarto
+    ctx.fillStyle="#0c1c0c";ctx.fillRect(0,0,320,200);
+    ctx.fillStyle="#173017";ctx.fillRect(50,15,220,115);                     // pared fondo
+    ctx.fillStyle="#0f220f";ctx.beginPath();ctx.moveTo(50,130);ctx.lineTo(270,130);ctx.lineTo(320,200);ctx.lineTo(0,200);ctx.fill(); // piso
+    ctx.fillStyle="#0a160a";ctx.fillRect(70,40,40,90);                       // puerta
+    ctx.fillStyle="#2e4a2e";ctx.fillRect(150,95,130,45);ctx.fillStyle="#3c5c3c";ctx.fillRect(150,85,130,14); // cama
+    ctx.fillStyle="#4c704c";ctx.fillRect(240,88,32,12);                     // almohada
+    ctx.fillStyle="#223a22";ctx.fillRect(118,105,26,30);                    // mesita
+    const off = ["empty","figure","asleep"].includes(mode) && S.call && S.call.ghost;
+    ctx.fillStyle="#5a7a5a";
+    if(off){ ctx.fillRect(122,140,16,6); ctx.strokeStyle="#5a7a5a";ctx.beginPath();ctx.moveTo(130,105);ctx.quadraticCurveTo(128,125,130,140);ctx.stroke(); } // auricular colgando
+    else ctx.fillRect(122,100,18,6);
+    ctx.fillStyle="#9b9";
+    if(mode==="onphone"){ ctx.beginPath();ctx.arc(170,62,11,0,7);ctx.fill();ctx.fillRect(158,73,26,34);ctx.fillRect(178,60,6,16);
+      ctx.strokeStyle="#5a7a5a";ctx.beginPath();ctx.moveTo(181,64);ctx.quadraticCurveTo(150,110,131,103);ctx.stroke(); }
+    if(mode==="asleep"){ ctx.fillStyle="#7a9a7a";ctx.beginPath();ctx.ellipse(205,92,40,10,0,0,7);ctx.fill();ctx.beginPath();ctx.arc(252,88,8,0,7);ctx.fill(); }
+    const cv = S.call && S.call.ghost ? S.call.v.id : null;
+    if(mode==="figure" && cv && chance(.93)){ ctx.globalAlpha=.85; drawFigure(ctx,cv,92,132,cv==="nina"?1.15:.95,performance.now()); ctx.globalAlpha=1; }
+    if(mode==="empty" && cv && chance(.006*S.night)){ ctx.globalAlpha=.7; drawFigure(ctx,cv,200,132,cv==="nina"?1.2:1,performance.now()); ctx.globalAlpha=1; }
+  }
+  // ruido + scanlines + texto
+  for(let i=0;i<260;i++){const v=Math.random()*200|0;ctx.fillStyle=`rgba(${v},${v+40},${v},.35)`;ctx.fillRect(Math.random()*320,Math.random()*200,1.5,1.5);}
+  ctx.fillStyle="rgba(0,0,0,.25)";for(let y=0;y<200;y+=3)ctx.fillRect(0,y,320,1);
+  ctx.fillStyle="#cfc";ctx.font="10px Courier New";ctx.textAlign="left";ctx.fillText(`CAM ${label}`,8,14);
+  ctx.textAlign="right";ctx.fillText(fmtClock(),312,14);
+  if(Math.floor(performance.now()/500)%2){ctx.fillStyle="#f33";ctx.beginPath();ctx.arc(300,190,4,0,7);ctx.fill();}
+  ctx.restore();
+}
+
+/* --------------- GRANO --------------- */
+const gctx=$("#grain").getContext("2d");
+function drawGrain(){ const im=gctx.createImageData(256,256); for(let i=0;i<im.data.length;i+=4){const v=Math.random()*255;im.data[i]=im.data[i+1]=im.data[i+2]=v;im.data[i+3]=255;} gctx.putImageData(im,0,0); }
+
+/* --------------- SUSTO FINAL --------------- */
+function jumpscare(){
+  S.over=true; window.speechSynthesis && speechSynthesis.cancel(); stopRing(); stopSig(); setStatic(0); heartbeat(false);
+  $("#callpanel").classList.remove("show"); $("#camview").classList.remove("show"); $("#registry").classList.remove("show");
+  $("#scene").classList.add("dark"); humGain.gain.value=0;
+  const v = S.lastV || pick(VILLAINS);
+  setTimeout(()=>{ knock(5); }, 900);
+  setTimeout(()=>{ startSig(v.sound,.6); }, 1300);
+  $("#ringbar").style.display='none'; $("#knockbar").style.display='none'; closeModals(); $("#history").classList.remove("show");
+  setTimeout(()=>{ W({jump:v.id}); }, 1700);
+  setTimeout(()=>{ stopSig(); scream(v.id==="nina"?2.2:v.id==="quemado"?.7:1); }, 2600);
+  setTimeout(()=>{ showEnd("lose"); }, 5200);
+  if(false) setTimeout(()=>{
+    stopSig();
+    const cv=$("#jumpc"), ctx=cv.getContext("2d"); cv.width=innerWidth; cv.height=innerHeight;
+    $("#jump").style.display="block"; scream(v.id==="nina"?2.2:v.id==="quemado"?.7:1); const t0=performance.now();
+    (function frame(){
+      const t=performance.now()-t0; const W=cv.width,H=cv.height, s=(.6+t/900)*Math.min(W,H)/600;
+      ctx.fillStyle=chance(.15)?(v.id==="quemado"?"#410":"#300"):"#000";ctx.fillRect(0,0,W,H);
+      ctx.save();ctx.translate(W/2+rnd(-25,25),H/2+rnd(-25,25));ctx.scale(s,s);
+      drawFace(ctx,v.id,t);
+      ctx.strokeStyle="#300";ctx.lineWidth=4;for(let i=0;i<5;i++){ctx.beginPath();ctx.moveTo(rnd(-120,120),rnd(-200,0));ctx.lineTo(rnd(-150,150),rnd(0,220));ctx.stroke();}
+      ctx.restore();
+      if(t<2200) requestAnimationFrame(frame);
+      else { $("#jump").style.display="none"; showEnd("lose"); }
+    })();
+  }, 2600);
+}
+
+/* --------------- FIN DE NOCHE --------------- */
+function checkEnd(){
+  if(S.over) return;
+  if(S.presence>=3) return jumpscare();
+  if(S.complaints>=3){ S.over=true; return showEnd("fired"); }
+}
+function showEnd(kind){
+  S.over=true; heartbeat(false); setStatic(0); stopRing(); stopSig(); if(humGain) humGain.gain.value=.05;
+  const b=$("#endBtns"); b.innerHTML="";
+  const btn=(txt,fn)=>{const x=document.createElement("button");x.textContent=txt;x.onclick=fn;b.appendChild(x);};
+  if(kind==="win"){
+    const next=S.night+1;
+    if(S.night>=5){
+      $("#endTitle").textContent="6:00 AM"; $("#endSub").textContent="Sobreviviste las 5 noches.";
+      $("#endText").innerHTML="El gerente llega temprano. Te mira raro.<br>«¿Quién te contrató? Este hotel cerró en 1987.»<br><br><i>El teléfono suena una vez más.</i>";
+      save={night:1}; btn("Volver a empezar",()=>start(1));
+    } else {
+      $("#endTitle").textContent="6:00 AM"; $("#endSub").textContent=`Sobreviviste la noche ${S.night}.`;
+      $("#endText").textContent=["La siguiente noche los fantasmas aprenderán a fingir mejor.","Ahora pueden falsificar el identificador de llamadas.","Sus voces ya casi suenan humanas.","Mañana es 14 de junio. El aniversario."][S.night-1];
+      save={night:next}; btn(`Noche ${next} ▶`,()=>start(next));
+    }
+  } else if(kind==="fired"){
+    $("#endTitle").textContent="DESPEDIDO"; $("#endSub").textContent=`Noche ${S.night}`;
+    $("#endText").textContent="Tres huéspedes reales se quejaron. El gerente te quita las llaves. Mientras sales, el teléfono de recepción empieza a sonar... y nadie más lo va a contestar.";
+    btn("Reintentar noche",()=>start(S.night));
+  } else {
+    const v=S.lastV||VILLAINS[0];
+    const lines={novia:"«Ahora tú también vas a esperar conmigo. Para siempre.»",botones:"«Por fin, mi reemplazo. Su turno empieza ahora, señor.»",nina:"«¡Te encontré! Ahora te toca contar a ti... hasta el infinito.»",quemado:"«Ahora ya sabes lo que se siente. El calor. El humo.»",operadora:"«Su llamada ha sido conectada... con el cuarto piso.»"};
+    $("#endTitle").textContent=`${v.nombre} TE ENCONTRÓ`; $("#endSub").textContent=`Noche ${S.night} · ${fmtClock()}`;
+    $("#endText").textContent=`${lines[v.id]}  Ahora hay un nuevo nombre en el memorial del piso 4.`;
+    btn("Reintentar noche",()=>start(S.night));
+  }
+  localStorage.setItem("lineaNocturna",JSON.stringify(save));
+  $("#endscreen").classList.add("show");
+}
+
+/* --------------- BUCLE PRINCIPAL --------------- */
+let gT=0;
+function loop(now){
+  requestAnimationFrame(loop);
+  if(now-gT>90){ drawGrain(); gT=now; }
+  if(!S || S.over){ return; }
+  const dt=Math.max(0,Math.min(100,now-S.last)); S.last=now; S.t+=dt;
+
+  if(S.t>=6*HOUR_MS){ if(S.call) endCall(false,"timeout"); if(S.over) return; updateHud(); return showEnd("win"); }
+  updateHud();
+
+  if(S.phase==="idle" && S.t>=S.nextCall && S.t<6*HOUR_MS-8000) ring();
+  if(S.phase==="ringing" && S.t-S.ringStart>RING_LIMIT) endCall(false,"missed");
+  if(S.phase==="incall"){
+    const left=1-(S.t-S.callStart)/S.d.callTime;
+    $("#tfill").style.width=Math.max(0,left*100)+"%"; $("#tfill").style.background=left<.3?"#c44":"#7c7";
+    if(S.call.ghost && S.call.distort && chance(.004)) flicker(300);
+    if(left<=0){ toast("Colgaron."); endCall(false,"timeout"); }
+  }
+  // eventos ambientales
+  if(chance(.0009*(1+S.presence))) whisper(rnd(1,2.5),.12+.06*S.presence);
+  if(chance(.0006*(1+S.presence))) flicker(rnd(200,600));
+  updateVisit(dt); if(S.over) return;
+  drawLobby(now);
+
+  const mode = S.phase==="incall" && S.camOpen ? S.camMode : (S.phase==="incall" ? "idle" : "idle");
+  drawCam(camSmall,320,200,mode,S.camOpen?S.camRoom:"--");
+  if(S.camOpen) drawCam(camBig,640,400,S.camMode,S.camRoom);
+}
+
+/* --------------- VISITAS A LA PUERTA (persiana) --------------- */
+function blindClosed(){ return S.t < S.blindUntil; }
+function toggleBlind(){
+  if(!S||S.over) return;
+  if(blindClosed() || S.t < S.blindCool){ return; }
+  S.blindUntil = S.t + 4000; S.blindCool = S.t + 6000;   // 4 s cerrada, 2 s sin poder volver a cerrarla
+  $("#blind").classList.add("closed"); W({blind:true}); if(AC) noiseHit(.25,.25,800);
+}
+function updateVisit(dt){
+  if(!blindClosed()&&$("#blind").classList.contains("closed")){ $("#blind").classList.remove("closed"); W({blind:false}); }
+  $("#knockbar").style.display = S.visit && !blindClosed() ? 'block' : 'none';
+  if(!S.visit){
+    if(S.night<2 || S.t<20000 || S.t>6*HOUR_MS-8000) return;
+    if(S.phase!=="idle" && S.night<3) return;
+    const rate=[0,1e-5,1.4e-5,1.8e-5,2.2e-5][S.night-1];
+    if(Math.random()<rate*dt){
+      S.visit={v:pick(VILLAINS.filter(x=>x.night<=S.night)), start:S.t, limit:[0,8500,7500,6500,5500][S.night-1], nextKnock:S.t+600}; W({visit:S.visit.v.id});
+    }
+    return;
+  }
+  const V=S.visit;
+  if(S.t>=V.nextKnock && !blindClosed()){ glassKnock(); V.nextKnock=S.t+rnd(1300,1900); if(chance(.4)) whisper(1.2,.15); }
+  if(blindClosed() && S.t-V.start>700){
+    S.visit=null; W({visit:null}); toast(pick(["Algo se alejó de la puerta... por ahora.","Escuchas pasos alejándose por el pasillo.","Una mano se desliza por el vidrio. Luego, nada."])); return;
+  }
+  if(S.t-V.start>V.limit){
+    S.visit=null; W({visit:null}); S.presence++; S.lastV=S.lobbyV=V.v;
+    toast(`${V.v.nombre} entró al lobby.`); ghostEvent(); updateHud(); checkEnd();
+  }
+}
+const lctx=$("#lobby").getContext("2d");
+function drawLobby(now){
+  lctx.clearRect(0,0,200,300);
+  let v=null, a=0;
+  if(S.visit){ v=S.visit.v; a=Math.min(1,(S.t-S.visit.start)/1800); }
+  else if(S.lobbyV && S.presence>=1){ v=S.lobbyV; a=(S.presence>=2?.75:.3)*(chance(.03)?0:1); }
+  if(!v) return;
+  lctx.globalAlpha=a; drawFigure(lctx,v.id,100,300,v.id==="nina"?3.4:2.5,now); lctx.globalAlpha=1;
+  const g=lctx.createLinearGradient(0,0,0,300); g.addColorStop(0,"rgba(5,7,10,.55)"); g.addColorStop(1,"rgba(5,7,10,.15)");
+  lctx.fillStyle=g; lctx.fillRect(0,0,200,300);
+}
+
+/* --------------- INTRO DE CADA NOCHE --------------- */
+function showIntro(n){
+  const it=NIGHT_INTRO[n];
+  $("#introTitle").textContent=`NOCHE ${n}`; $("#introSub").textContent=it.sub;
+  $("#introCards").innerHTML=it.ids.map(id=>{const v=vById(id);return `<div class="card"><img src="renders/v6-personaje-${id}.png" alt=""><b>${v.nombre}</b><p>${v.desc}</p><p class="tell">🔎 Cómo reconocerlo: ${v.tell}</p></div>`}).join("");
+  document.querySelectorAll("#introCards canvas").forEach(cv=>portrait(cv,cv.dataset.v));
+  $("#introBtn").onclick=()=>begin(n);
+  $("#title").classList.remove("show"); $("#endscreen").classList.remove("show");
+  $("#intro").classList.add("show");
+}
+
+/* --------------- EVENTOS --------------- */
+function start(n){
+  initAudio(); AC.resume(); humGain.gain.value=.05;
+  showIntro(n);
+}
+function begin(n){
+  $("#intro").classList.remove("show");
+  $("#scene").classList.remove("dark");
+  newNight(n); S.last=performance.now();
+  toast(`NOCHE ${n} · 12:00 AM`);
+}
+$("#backdoor").onclick=toggleBlind;
+$("#startBtn").onclick=()=>start(save.night||1);
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('show'); }));
+$("#phone").onclick=answer;
+$("#monitor").onclick=()=>{ if(S&&S.phase==="incall") openCam(); else toast("Las cámaras solo se activan durante una llamada."); };
+$("#book").onclick=()=>$("#registry").classList.add("show");
+$("#qBook").onclick=()=>$("#registry").classList.add("show");
+$("#closeBook").onclick=()=>$("#registry").classList.remove("show");
+$("#closeLog").onclick=()=>$("#history").classList.remove("show");
+$("#tBook").onclick=()=>worldAct('book'); $("#tLog").onclick=()=>worldAct('log'); $("#tBlind").onclick=()=>worldAct('blind');
+$("#qName").onclick=askName;
+$("#qRoom").onclick=askRoom;
+$("#qCam").onclick=openCam;
+$("#closeCam").onclick=()=>{S.camOpen=false;$("#camview").classList.remove("show");};
+$("#accept").onclick=()=>endCall(true);
+$("#reject").onclick=()=>endCall(false,"hangup");
+document.addEventListener("keydown",e=>{
+  if(!S||S.over) return;
+  if(e.code==="Space"){ e.preventDefault(); answer(); }
+  if(e.key==="p"||e.key==="P") toggleBlind();
+  if(e.key==="h"||e.key==="H") worldKey('KeyH');
+  if(e.key==="Escape") closeModals();
+});
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
